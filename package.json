@@ -1,15 +1,21 @@
 {
-  "name": "sbobine-notify",
+  "name": "my-express-vercel-app",
   "version": "1.0.0",
+  "description": "An Express app running on Vercel",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "express": "^4.21.0"
-  }
+    "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15" 
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "author": "Khaled Shahm",
+  "license": "ISC"
 }
