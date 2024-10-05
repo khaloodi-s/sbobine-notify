@@ -1,17 +1,11 @@
 {
-  "name": "my-express-vercel-app",
+  "name": "sbobine-notify",
   "version": "1.0.0",
-  "description": "An Express app running on Vercel",
-  "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "micro"
   },
   "dependencies": {
-    "express": "^4.17.1"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.15" 
+    "micro": "^9.3.4"
   },
   "engines": {
     "node": ">=14.0.0"

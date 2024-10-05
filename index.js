@@ -1,11 +1,5 @@
-const express = require('express');
-const app = express();
-const port = process.env.PORT || 3000; // Use port provided by Vercel
+const { send } = require('micro');
 
-app.get('/', (req, res) => {
-  res.send('Hello from Vercel!');
-});
-
-app.listen(port, () => {
-  console.log(`App listening at http://localhost:${port}`);
-});
+module.exports = (req, res) => {
+  send(res, 200, 'Hello from Vercel!');
+};
