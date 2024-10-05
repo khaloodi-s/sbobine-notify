@@ -5,7 +5,11 @@
     "start": "micro"
   },
   "dependencies": {
-    "micro": "^9.3.4"
+    "baileys": "github:WhiskeySockets/Baileys",
+    "firebase-admin": "^12.6.0",
+    "git": "^0.1.5",
+    "micro": "^9.3.4",
+    "qrcode-terminal": "^0.12.0"
   },
   "engines": {
     "node": ">=14.0.0"
