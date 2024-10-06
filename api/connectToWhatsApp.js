@@ -1,64 +1,72 @@
 const { default: makeWASocket, useMultiFileAuthState } = require('baileys');
-const { initializeApp, cert } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
+const { Storage } = require('@google-cloud/storage');
 const fs = require('fs');
 const path = require('path');
 
-// Initialize Firebase Admin SDK
-const serviceAccount = require('./serviceAccountKey.json');
-initializeApp({
-  credential: cert(serviceAccount),
+// Initialize Google Cloud Storage
+const storage = new Storage({
+  keyFilename: './serviceAccountKey.json', // Path to your service account key file
 });
-const db = getFirestore();
+
+const bucketName = 'whatsapp-credentials'; // Replace with your GCS bucket name
+const credsFileName = 'creds.json'; // The file name for your credentials
 
 let sock;
 
-// Function to connect to WhatsApp
 const connectToWhatsApp = async () => {
   if (sock) return sock; // Return existing socket if already connected
 
-  // Load authentication state from file and Firestore
+  // Function to load credentials from GCS
+  const loadCredsFromGCS = async () => {
+    const file = storage.bucket(bucketName).file(credsFileName);
+    try {
+      const [exists] = await file.exists();
+      if (!exists) return {}; // Return empty object if file doesn't exist
+
+      const [contents] = await file.download();
+      return JSON.parse(contents.toString()); // Parse and return JSON content
+    } catch (error) {
+      console.error('Error loading credentials from GCS:', error);
+      return {};
+    }
+  };
+
+  const initialState = await loadCredsFromGCS();
   const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, 'auth'), {
-    state: await db.collection('whatsappSessions').doc('session').get().then(doc => doc.data() || {})
+    state: initialState,
   });
 
-  console.log('Loaded credentials:', state); // Log loaded credentials
+  console.log('Loaded credentials:', state); // Log the credentials to check their structure
 
-  sock = makeWASocket({
-    auth: state,
-    printQRInTerminal: true, // Print QR code in the terminal for initial connections
-  });
+  sock = makeWASocket({ auth: state });
 
-  // Handle credential updates
+  // Listen for connection updates
   sock.ev.on('creds.update', async (creds) => {
-    // Check for 'me' property in credentials
+    // Check if 'me' is defined in the credentials
     if (!creds.me) {
       console.error('Credentials do not contain "me" property:', creds);
       return; // Exit if 'me' is not present
     }
 
-    // Filter out undefined properties and save credentials to Firestore
+    // Filter out undefined properties
     const filteredCreds = Object.fromEntries(
       Object.entries(creds).filter(([_, v]) => v !== undefined)
     );
 
-    await db.collection('whatsappSessions').doc('session').set(filteredCreds);
+    // Save the credentials to GCS
+    const credsBuffer = Buffer.from(JSON.stringify(filteredCreds));
+    const file = storage.bucket(bucketName).file(credsFileName);
+    await file.save(credsBuffer);
+    console.log('Credentials saved to GCS');
+    
     saveCreds(creds);
   });
 
-  // Listen for connection updates
-  sock.ev.on('connection.update', async (update) => {
+  sock.ev.on('connection.update', (update) => {
     const { connection, lastDisconnect } = update;
-
     if (connection === 'close') {
-      console.log('Connection closed. Attempting to reconnect...');
-      
-      const shouldReconnect = lastDisconnect.error?.output?.statusCode !== 401; // Check if the disconnection was not due to an unauthorized access
-      if (shouldReconnect) {
-        setTimeout(connectToWhatsApp, 5000); // Reconnect after 5 seconds
-      } else {
-        console.error('Connection closed due to unauthorized access. Please check credentials.');
-      }
+      console.log('Connection closed. Reconnecting...');
+      connectToWhatsApp(); // Reconnect on close
     } else if (connection === 'open') {
       console.log('Connected to WhatsApp!');
     }

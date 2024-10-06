@@ -5,6 +5,7 @@
     "start": "micro"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.13.0",
     "baileys": "github:WhiskeySockets/Baileys",
     "firebase-admin": "^12.6.0",
     "git": "^0.1.5",
