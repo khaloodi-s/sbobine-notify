@@ -16,7 +16,7 @@ let sock;
 const connectToWhatsApp = async () => {
   if (sock) return sock; // Return existing socket if already connected
 
-  const { state, saveCreds } = await useMultiFileAuthState('./auth', {
+  const { state, saveCreds } = await useMultiFileAuthState('api/auth', {
     state: await db.collection('whatsappSessions').doc('session').get().then(doc => doc.data() || {})
   });
 
