@@ -8,6 +8,7 @@
     "baileys": "github:WhiskeySockets/Baileys",
     "firebase-admin": "^12.6.0",
     "git": "^0.1.5",
+    "link-preview-js": "^3.0.5",
     "micro": "^9.3.4",
     "qrcode-terminal": "^0.12.0"
   },
