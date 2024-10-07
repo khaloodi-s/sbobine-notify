@@ -7,12 +7,16 @@
   "dependencies": {
     "@google-cloud/storage": "^7.13.0",
     "baileys": "github:WhiskeySockets/Baileys",
+    "dotenv": "^16.4.5",
     "firebase-admin": "^12.6.0",
     "git": "^0.1.5",
+    "googleapis": "^144.0.0",
     "link-preview-js": "^3.0.5",
     "micro": "^9.3.4",
     "mime": "^4.0.4",
-    "qrcode-terminal": "^0.12.0"
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
+    "terminal-image": "^3.0.0"
   },
   "engines": {
     "node": ">=14.0.0"

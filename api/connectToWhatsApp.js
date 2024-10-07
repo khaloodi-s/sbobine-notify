@@ -1,119 +1,110 @@
+require('dotenv').config(); // THIS IS FOR LOCAL TESTING PURPOSES ONLY - COMMENT IT OUT BEFORE DEPLOYING
 const { google } = require('googleapis');
-const { default: makeWASocket, useMultiFileAuthState } = require('baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
 const fs = require('fs');
 const path = require('path');
 
-// Initialize Google Drive API using OAuth2 credentials
+// Initialize Google Drive API
 const auth = new google.auth.OAuth2(
-  process.env.CLIENT_ID,
-  process.env.CLIENT_SECRET,
-  process.env.REDIRECT_URI
+    process.env.CLIENT_ID,
+    process.env.CLIENT_SECRET,
+    process.env.REDIRECT_URI
 );
+
+// Set the credentials
 auth.setCredentials({
-  refresh_token: process.env.REFRESH_TOKEN,
+    refresh_token: process.env.REFRESH_TOKEN,
 });
 
+// Initialize the Drive API
 const drive = google.drive({ version: 'v3', auth });
 
 // Google Drive file details
-const folderId = '1qZwXlkTDAeORIR3sdzOOGiR39RBD25ZP'; // Your Google Drive folder ID
-const credsFileName = 'whatsapp_creds.json'; // File name for WhatsApp creds
+const folderId = '1qZwXlkTDAeORIR3sdzOOGiR39RBD25ZP'; // Replace with your Google Drive folder ID
+const credsFileName = 'whatsapp_creds.json'; // File name for your auth creds
 
-const connectToWhatsApp = async () => {
-  // Function to download credentials from Google Drive
-  const getCredentialsFromDrive = async () => {
+async function connectToWhatsApp() {
+    let fileId;
+
+    // Function to download the credentials file from Google Drive
+    const getCredentialsFromDrive = async () => {
+        console.log(`Attempting to retrieve credentials file: ${credsFileName} from folder: ${folderId}`);
+        const res = await drive.files.list({
+            q: `'${folderId}' in parents and name='${credsFileName}'`,
+            fields: 'files(id, name)',
+        });
+
+        if (res.data.files.length === 0) {
+            throw new Error(`Credentials file ${credsFileName} does not exist in folder ${folderId}`);
+        }
+
+        fileId = res.data.files[0].id; // Store the file ID here
+        const tempFilePath = path.join(__dirname, credsFileName);
+        const dest = fs.createWriteStream(tempFilePath);
+
+        console.log(`Downloading credentials file with ID: ${fileId}`);
+        const response = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
+
+        return new Promise((resolve, reject) => {
+            response.data
+                .pipe(dest)
+                .on('finish', () => {
+                    console.log('Credentials file downloaded successfully.');
+                    resolve(require(tempFilePath));
+                })
+                .on('error', reject);
+        });
+    };
+
+    let state;
     try {
-      const res = await drive.files.list({
-        q: `'${folderId}' in parents and name='${credsFileName}'`,
-        fields: 'files(id, name)',
-      });
-
-      if (res.data.files.length === 0) {
-        throw new Error(`Credentials file ${credsFileName} does not exist in folder ${folderId}`);
-      }
-
-      const fileId = res.data.files[0].id;
-      const tempFilePath = path.join(__dirname, credsFileName);
-      const dest = fs.createWriteStream(tempFilePath);
-
-      // Download the file
-      await new Promise((resolve, reject) => {
-        drive.files.get(
-          { fileId, alt: 'media' },
-          { responseType: 'stream' },
-          (err, { data }) => {
-            if (err) return reject(err);
-            data
-              .on('end', () => resolve())
-              .on('error', reject)
-              .pipe(dest);
-          }
-        );
-      });
-
-      return require(tempFilePath);
+        state = await getCredentialsFromDrive();
     } catch (error) {
-      console.error('Error downloading credentials from Google Drive:', error);
-      throw error;
+        console.log(error.message);
+        console.log('No existing credentials found. Please scan the QR code to authenticate.');
     }
-  };
 
-  // Fetch credentials
-  const state = await getCredentialsFromDrive();
+    const { state: authState, saveCreds } = await useMultiFileAuthState(path.join(__dirname, 'auth_info_baileys'), {
+        state,
+    });
 
-  // Initialize WhatsApp socket with credentials
-  const { state: authState, saveCreds } = await useMultiFileAuthState(path.join(__dirname, 'auth'), {
-    state,
-  });
+    console.log('Loaded credentials:', authState);
 
-  console.log('Loaded credentials:', authState);
+    const sock = makeWASocket({
+        auth: authState,
+        printQRInTerminal: true, // Print QR code in terminal
+    });
 
-  const sock = makeWASocket({ auth: authState });
+    sock.ev.on('connection.update', (update) => {
+        const { connection, lastDisconnect } = update;
 
-  // Update credentials and upload back to Google Drive on change
-  sock.ev.on('creds.update', async (creds) => {
-    try {
-      const fileIdRes = await drive.files.list({
-        q: `'${folderId}' in parents and name='${credsFileName}'`,
-        fields: 'files(id)',
-      });
+        if (connection === 'close') {
+            const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+            console.log('Connection closed due to:', lastDisconnect?.error, ', reconnecting:', shouldReconnect);
 
-      const fileId = fileIdRes.data.files[0].id;
+            if (shouldReconnect) {
+                connectToWhatsApp(); // Reconnect if not logged out
+            }
+        } else if (connection === 'open') {
+            console.log('Successfully opened connection');
+        }
+    });
 
-      const tempFilePath = path.join(__dirname, credsFileName);
-      fs.writeFileSync(tempFilePath, JSON.stringify(creds)); // Write updated creds to file
+    sock.ev.on('messages.upsert', async (messageUpdate) => {
+        console.log(JSON.stringify(messageUpdate, undefined, 2));
 
-      const media = {
-        mimeType: 'application/json',
-        body: fs.createReadStream(tempFilePath),
-      };
+        const message = messageUpdate.messages[0];
+        const remoteJid = message.key.remoteJid;
 
-      // Update the file on Google Drive
-      await drive.files.update({
-        fileId,
-        media,
-        resource: { name: credsFileName, parents: [folderId] },
-      });
+        if (remoteJid) {
+            console.log('Replying to', remoteJid);
+            await sock.sendMessage(remoteJid, { text: 'Hello there!' });
+        }
+    });
 
-      saveCreds(creds); // Save creds locally after uploading to Drive
-      console.log('Credentials updated successfully in Google Drive.');
-    } catch (error) {
-      console.error('Error updating credentials on Google Drive:', error);
-    }
-  });
+    sock.ev.on('creds.update', saveCreds);
 
-  // Handle connection status updates
-  sock.ev.on('connection.update', (update) => {
-    const { connection, lastDisconnect } = update;
-    if (connection === 'close') {
-      console.log('Connection closed. Reconnecting...');
-      connectToWhatsApp(); // Reconnect on close
-    } else if (connection === 'open') {
-      console.log('Connected to WhatsApp!');
-    }
-  });
-
-  return sock; // Return the socket
-};
+    return sock; // Ensure to return the socket object
+}
 
 module.exports = connectToWhatsApp; // Export the function

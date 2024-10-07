@@ -1,12 +1,56 @@
 const connectToWhatsApp = require('./connectToWhatsApp');
 
 const testConnection = async () => {
+    let sock;
+
     try {
-        const sock = await connectToWhatsApp();
+        sock = await connectToWhatsApp();
         console.log('WhatsApp socket:', sock);
-        // Optionally, you can send a test message or log more info here
+
+        // Wait for the connection to be established
+        const waitForConnection = () => {
+            return new Promise((resolve, reject) => {
+                const checkConnection = (update) => {
+                    const { connection, lastDisconnect } = update;
+
+                    if (connection === 'open') {
+                        sock.ev.off('connection.update', checkConnection); // Unsubscribe from updates
+                        resolve(); // Resolve when connection is open
+                    } else if (connection === 'close') {
+                        sock.ev.off('connection.update', checkConnection);
+                        reject(new Error(`Connection closed. Reason: ${lastDisconnect?.error}`));
+                    }
+                };
+
+                sock.ev.on('connection.update', checkConnection); // Listen for connection updates
+            });
+        };
+
+        await waitForConnection(); // Wait until the connection is open
+        console.log('Connection established!');
+
+        // Send a test message (change the phone number and message as needed)
+        const testMessage = 'Test message from WhatsApp API';
+        const testPhoneNumber = '+96565022680@s.whatsapp.net'; // Replace with an actual phone number
+
+        try {
+            await sock.sendMessage(testPhoneNumber, { text: testMessage });
+            console.log(`Sent test message to ${testPhoneNumber}`);
+        } catch (sendError) {
+            console.error('Error sending message:', sendError);
+        }
     } catch (error) {
         console.error('Error connecting to WhatsApp:', error);
+    } finally {
+        // Instead of sock.close(), you can use sock.logout() if you want to disconnect
+        if (sock) {
+            try {
+                await sock.logout(); // This will disconnect the WhatsApp session
+                console.log('WhatsApp socket logged out.');
+            } catch (logoutError) {
+                console.error('Error logging out:', logoutError);
+            }
+        }
     }
 };
 
