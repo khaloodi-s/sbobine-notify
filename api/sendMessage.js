@@ -1,18 +1,30 @@
-const { send } = require('micro');
+const express = require('express');
 const connectToWhatsApp = require('./connectToWhatsApp'); // Import the connectToWhatsApp function
-const { json } = require('micro');
 
-const sendMessage = async (req, res) => {
-  const { groupId, message } = await json(req);
+let sock; // Declare a variable to hold the WhatsApp socket
 
-  const sock = await connectToWhatsApp(); // Get the existing connection
-  try {
-    await sock.sendMessage(groupId, { text: message });
-    send(res, 200, { success: true, message: 'Message sent successfully' });
-  } catch (error) {
-    console.error('Failed to send message:', error);
-    send(res, 500, { success: false, message: 'Failed to send message' });
-  }
+// Function to ensure we have a connected socket
+const ensureConnection = async () => {
+    if (!sock) {
+        sock = await connectToWhatsApp(); // Establish connection if not already done
+    }
 };
 
-module.exports = sendMessage;
+const router = express.Router();
+
+// Endpoint to send a message
+router.post('/send-message', async (req, res) => {
+    const { groupId, message } = req.body;
+
+    await ensureConnection(); // Ensure socket is connected
+
+    try {
+        await sock.sendMessage(groupId, { text: message });
+        return res.status(200).json({ success: true, message: 'Message sent successfully' });
+    } catch (error) {
+        console.error('Failed to send message:', error);
+        return res.status(500).json({ success: false, message: 'Failed to send message' });
+    }
+});
+
+module.exports = router;

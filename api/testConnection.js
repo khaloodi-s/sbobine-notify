@@ -1,10 +1,10 @@
 const connectToWhatsApp = require('./connectToWhatsApp');
 
-const testConnection = async () => {
-    let sock;
+let sock; // Declare a variable to hold the WhatsApp socket
 
+const testConnection = async () => {
     try {
-        sock = await connectToWhatsApp();
+        sock = await connectToWhatsApp(); // Use the existing function to connect
         console.log('WhatsApp socket:', sock);
 
         // Wait for the connection to be established
@@ -18,7 +18,7 @@ const testConnection = async () => {
                         resolve(); // Resolve when connection is open
                     } else if (connection === 'close') {
                         sock.ev.off('connection.update', checkConnection);
-                        reject(new Error(`Connection closed. Reason: ${lastDisconnect?.error}`));
+                        reject(new Error(`Connection closed. Reason: ${lastDisconnect?.error || 'Unknown'}`));
                     }
                 };
 
@@ -40,15 +40,14 @@ const testConnection = async () => {
             console.error('Error sending message:', sendError);
         }
     } catch (error) {
-        console.error('Error connecting to WhatsApp:', error);
+        console.error('Error connecting to WhatsApp:', error.message || error);
     } finally {
-        // Instead of sock.close(), you can use sock.logout() if you want to disconnect
         if (sock) {
             try {
-                await sock.logout(); // This will disconnect the WhatsApp session
+                await sock.logout(); // Disconnect the WhatsApp session
                 console.log('WhatsApp socket logged out.');
             } catch (logoutError) {
-                console.error('Error logging out:', logoutError);
+                console.error('Error logging out:', logoutError.message || logoutError);
             }
         }
     }

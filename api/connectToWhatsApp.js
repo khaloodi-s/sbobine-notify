@@ -1,78 +1,28 @@
 require('dotenv').config(); // THIS IS FOR LOCAL TESTING PURPOSES ONLY - COMMENT IT OUT BEFORE DEPLOYING
-const { google } = require('googleapis');
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
 const fs = require('fs');
 const path = require('path');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
 
-// Initialize Google Drive API
-const auth = new google.auth.OAuth2(
-    process.env.CLIENT_ID,
-    process.env.CLIENT_SECRET,
-    process.env.REDIRECT_URI
-);
-
-// Set the credentials
-auth.setCredentials({
-    refresh_token: process.env.REFRESH_TOKEN,
-});
-
-// Initialize the Drive API
-const drive = google.drive({ version: 'v3', auth });
-
-// Google Drive file details
-const folderId = '1qZwXlkTDAeORIR3sdzOOGiR39RBD25ZP'; // Replace with your Google Drive folder ID
-const credsFileName = 'whatsapp_creds.json'; // File name for your auth creds
+const sessionFilePath = path.join('/data', 'auth_info.json'); // Path for local storage on Fly.io
 
 async function connectToWhatsApp() {
-    let fileId;
-
-    // Function to download the credentials file from Google Drive
-    const getCredentialsFromDrive = async () => {
-        console.log(`Attempting to retrieve credentials file: ${credsFileName} from folder: ${folderId}`);
-        const res = await drive.files.list({
-            q: `'${folderId}' in parents and name='${credsFileName}'`,
-            fields: 'files(id, name)',
-        });
-
-        if (res.data.files.length === 0) {
-            throw new Error(`Credentials file ${credsFileName} does not exist in folder ${folderId}`);
-        }
-
-        fileId = res.data.files[0].id; // Store the file ID here
-        const tempFilePath = path.join(__dirname, credsFileName);
-        const dest = fs.createWriteStream(tempFilePath);
-
-        console.log(`Downloading credentials file with ID: ${fileId}`);
-        const response = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
-
-        return new Promise((resolve, reject) => {
-            response.data
-                .pipe(dest)
-                .on('finish', () => {
-                    console.log('Credentials file downloaded successfully.');
-                    resolve(require(tempFilePath));
-                })
-                .on('error', reject);
-        });
-    };
-
     let state;
-    try {
-        state = await getCredentialsFromDrive();
-    } catch (error) {
-        console.log(error.message);
-        console.log('No existing credentials found. Please scan the QR code to authenticate.');
+
+    // Check if the session file exists and load it if it does
+    if (fs.existsSync(sessionFilePath)) {
+        state = JSON.parse(fs.readFileSync(sessionFilePath, 'utf8'));
+        console.log('Loaded existing session from local storage.');
+    } else {
+        console.log('No existing session found. Please scan the QR code to authenticate.');
     }
 
-    const { state: authState, saveCreds } = await useMultiFileAuthState(path.join(__dirname, 'auth_info_baileys'), {
+    const { state: authState, saveCreds } = await useMultiFileAuthState(path.join('/data', 'auth_info_baileys'), {
         state,
     });
 
-    console.log('Loaded credentials:', authState);
-
     const sock = makeWASocket({
         auth: authState,
-        printQRInTerminal: true, // Print QR code in terminal
+        printQRInTerminal: true, // Print QR code in terminal for authentication
     });
 
     sock.ev.on('connection.update', (update) => {
@@ -102,7 +52,11 @@ async function connectToWhatsApp() {
         }
     });
 
-    sock.ev.on('creds.update', saveCreds);
+    sock.ev.on('creds.update', async () => {
+        await saveCreds(); // Save credentials to local storage
+        fs.writeFileSync(sessionFilePath, JSON.stringify(authState), 'utf8'); // Save to local file
+        console.log('Credentials saved to local storage.');
+    });
 
     return sock; // Ensure to return the socket object
 }
