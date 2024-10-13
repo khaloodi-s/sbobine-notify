@@ -7,7 +7,9 @@
   "dependencies": {
     "@google-cloud/storage": "^7.13.0",
     "baileys": "github:WhiskeySockets/Baileys",
+    "body-parser": "^1.20.3",
     "dotenv": "^16.4.5",
+    "express": "^4.21.1",
     "firebase-admin": "^12.6.0",
     "git": "^0.1.5",
     "googleapis": "^144.0.0",

@@ -1,11 +1,17 @@
-require('dotenv').config(); // THIS IS FOR LOCAL TESTING PURPOSES ONLY - COMMENT IT OUT BEFORE DEPLOYING
+// require('dotenv').config(); THIS IS FOR LOCAL TESTING PURPOSES ONLY - COMMENT IT OUT BEFORE DEPLOYING
 const fs = require('fs');
 const path = require('path');
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
 
-const sessionFilePath = path.join('/data', 'auth_info.json'); // Path for local storage on Fly.io
+// Path for local storage on Fly.io
+const sessionFilePath = path.join('/data', 'auth_info.json'); 
+let sock; // Declare sock at a higher scope to manage the connection
 
 async function connectToWhatsApp() {
+    if (sock) {
+        return sock; // Return existing socket if already connected
+    }
+
     let state;
 
     // Check if the session file exists and load it if it does
@@ -20,7 +26,7 @@ async function connectToWhatsApp() {
         state,
     });
 
-    const sock = makeWASocket({
+    sock = makeWASocket({
         auth: authState,
         printQRInTerminal: true, // Print QR code in terminal for authentication
     });
@@ -33,22 +39,11 @@ async function connectToWhatsApp() {
             console.log('Connection closed due to:', lastDisconnect?.error, ', reconnecting:', shouldReconnect);
 
             if (shouldReconnect) {
-                connectToWhatsApp(); // Reconnect if not logged out
+                sock = null; // Reset sock to allow reconnection
+                connectToWhatsApp(); // Attempt to reconnect
             }
         } else if (connection === 'open') {
             console.log('Successfully opened connection');
-        }
-    });
-
-    sock.ev.on('messages.upsert', async (messageUpdate) => {
-        console.log(JSON.stringify(messageUpdate, undefined, 2));
-
-        const message = messageUpdate.messages[0];
-        const remoteJid = message.key.remoteJid;
-
-        if (remoteJid) {
-            console.log('Replying to', remoteJid);
-            await sock.sendMessage(remoteJid, { text: 'Hello there!' });
         }
     });
 
@@ -58,7 +53,7 @@ async function connectToWhatsApp() {
         console.log('Credentials saved to local storage.');
     });
 
-    return sock; // Ensure to return the socket object
+    return sock; // Return the socket object
 }
 
 module.exports = connectToWhatsApp; // Export the function
