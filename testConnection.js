@@ -1,4 +1,4 @@
-const connectToWhatsApp = require('../connectToWhatsApp');
+const connectToWhatsApp = require('./connectToWhatsApp');
 
 let sock; // Declare a variable to hold the WhatsApp socket
 
