@@ -29,6 +29,7 @@ async function connectToWhatsApp() {
     sock = makeWASocket({
         auth: authState,
         printQRInTerminal: true, // Print QR code in terminal for authentication
+        syncFullHistory: false,
     });
 
     sock.ev.on('connection.update', (update) => {
@@ -53,7 +54,22 @@ async function connectToWhatsApp() {
         console.log('Credentials saved to local storage.');
     });
 
+    setTimeout(async () => {
+        const jid = '96565022680@s.whatsapp.net'; // Update this with the correct JID
+
+        await sock.presenceSubscribe(jid);
+        await delay(500);
+
+        await sock.sendPresenceUpdate('composing', jid);
+        await delay(2000);
+
+        await sock.sendPresenceUpdate('paused', jid);
+        await sock.sendMessage(jid, { text: 'Hello from WhatsApp' });
+    }, 30000);
+
     return sock; // Return the socket object
 }
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 module.exports = connectToWhatsApp; // Export the function
