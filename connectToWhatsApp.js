@@ -1,10 +1,11 @@
+// require('dotenv').config(); THIS IS FOR LOCAL TESTING PURPOSES ONLY - COMMENT IT OUT BEFORE DEPLOYING
 const fs = require('fs');
 const path = require('path');
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
 
 // Path for local storage on Fly.io
-const sessionFilePath = path.join('/data', 'auth_info.json');
-let sock;
+const sessionFilePath = path.join('/data', 'auth_info.json'); 
+let sock; // Declare sock at a higher scope to manage the connection
 
 async function connectToWhatsApp() {
     if (sock) {
@@ -15,13 +16,10 @@ async function connectToWhatsApp() {
 
     // Check if the session file exists and load it if it does
     if (fs.existsSync(sessionFilePath)) {
-        try {
-            state = JSON.parse(fs.readFileSync(sessionFilePath, 'utf8'));
-            console.log(`Loaded existing session from local storage found at ${sessionFilePath}.`);
-        } catch (err) {
-            console.error('Error reading session file, starting a new session:', err);
-            state = null;
-        }
+        state = JSON.parse(fs.readFileSync(sessionFilePath, 'utf8'));
+        console.log(`Loaded existing session from local storage found at ${sessionFilePath}.`);
+    } else {
+        console.log('No existing session found. Please scan the QR code to authenticate.');
     }
 
     const { state: authState, saveCreds } = await useMultiFileAuthState(path.join('/data', 'auth_info_baileys'), {
@@ -30,21 +28,18 @@ async function connectToWhatsApp() {
 
     sock = makeWASocket({
         auth: authState,
-        printQRInTerminal: true, // Show QR code in terminal
+        printQRInTerminal: true, // Print QR code in terminal for authentication
     });
 
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect } = update;
 
         if (connection === 'close') {
-            const disconnectReason = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.error?.statusCode;
+            const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+            console.log('Connection closed due to:', lastDisconnect?.error, ', reconnecting:', shouldReconnect);
 
-            console.log('Connection closed due to:', disconnectReason, 'Reconnecting:', disconnectReason !== DisconnectReason.loggedOut);
-
-            if (disconnectReason !== DisconnectReason.loggedOut) {
-                // Reset the session files on failure to avoid reuse of bad state
-                cleanupSessionFiles();
-                sock = null; // Reset socket to allow reconnection
+            if (shouldReconnect) {
+                sock = null; // Reset sock to allow reconnection
                 connectToWhatsApp(); // Attempt to reconnect
             }
         } else if (connection === 'open') {
@@ -58,20 +53,7 @@ async function connectToWhatsApp() {
         console.log('Credentials saved to local storage.');
     });
 
-    return sock;
+    return sock; // Return the socket object
 }
 
-// Cleanup function to remove old/invalid session files
-function cleanupSessionFiles() {
-    if (fs.existsSync(sessionFilePath)) {
-        fs.unlinkSync(sessionFilePath); // Delete session file
-        console.log('Deleted existing session file.');
-    }
-    const baileysAuthDir = path.join('/data', 'auth_info_baileys');
-    if (fs.existsSync(baileysAuthDir)) {
-        fs.rmSync(baileysAuthDir, { recursive: true }); // Delete Baileys auth directory
-        console.log('Deleted Baileys auth directory.');
-    }
-}
-
-module.exports = connectToWhatsApp;
+module.exports = connectToWhatsApp; // Export the function
