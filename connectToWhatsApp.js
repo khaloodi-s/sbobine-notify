@@ -1,59 +1,68 @@
-// require('dotenv').config(); THIS IS FOR LOCAL TESTING PURPOSES ONLY - COMMENT IT OUT BEFORE DEPLOYING
 const fs = require('fs');
 const path = require('path');
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 
-// Path for local storage on Fly.io
-const sessionFilePath = path.join('/data', 'auth_info.json'); 
+// Path for storing session data on Fly.io
+const sessionFolderPath = path.join('/data', 'auth_info_baileys');
+const sessionFilePath = path.join('/data', 'auth_info.json');
+
 let sock; // Declare sock at a higher scope to manage the connection
 
+// Function to connect to WhatsApp
 async function connectToWhatsApp() {
     if (sock) {
         return sock; // Return existing socket if already connected
     }
 
-    let state;
-
-    // Check if the session file exists and load it if it does
-    if (fs.existsSync(sessionFilePath)) {
-        state = JSON.parse(fs.readFileSync(sessionFilePath, 'utf8'));
-        console.log(`Loaded existing session from local storage found at ${sessionFilePath}.`);
-    } else {
-        console.log('No existing session found. Please scan the QR code to authenticate.');
-    }
-
-    const { state: authState, saveCreds } = await useMultiFileAuthState(path.join('/data', 'auth_info_baileys'), {
-        state,
-    });
+    // Load the authentication state
+    const { state, saveCreds } = await useMultiFileAuthState(sessionFolderPath);
 
     sock = makeWASocket({
-        auth: authState,
-        printQRInTerminal: true, // Print QR code in terminal for authentication
+        auth: state,
+        printQRInTerminal: true, // Print QR code for authentication if needed
     });
 
+    // Connection updates (handles disconnections and reconnections)
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect } = update;
 
         if (connection === 'close') {
-            const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+            const shouldReconnect = (lastDisconnect?.error?.output?.statusCode) !== DisconnectReason.loggedOut;
             console.log('Connection closed due to:', lastDisconnect?.error, ', reconnecting:', shouldReconnect);
 
             if (shouldReconnect) {
-                sock = null; // Reset sock to allow reconnection
-                connectToWhatsApp(); // Attempt to reconnect
+                setTimeout(connectToWhatsApp, 5000); // Reconnect after 5 seconds
             }
         } else if (connection === 'open') {
-            console.log('Successfully opened connection');
+            console.log('Connection successfully opened');
         }
     });
 
+    // Save credentials when they are updated
     sock.ev.on('creds.update', async () => {
-        await saveCreds(); // Save credentials to local storage
-        fs.writeFileSync(sessionFilePath, JSON.stringify(authState), 'utf8'); // Save to local file
-        console.log('Credentials saved to local storage.');
+        await saveCreds(); // Save credentials using Baileys helper
+        fs.writeFile(sessionFilePath, JSON.stringify(state), 'utf8', (err) => {
+            if (err) {
+                console.error('Error saving credentials:', err);
+            } else {
+                console.log('Credentials saved to local storage.');
+            }
+        });
+    });
+
+    // Message event handler (responding to incoming messages)
+    sock.ev.on('messages.upsert', async (m) => {
+        try {
+            console.log('New message:', JSON.stringify(m, null, 2));
+            const jid = m.messages[0].key.remoteJid;
+            console.log('Replying to:', jid);
+            await sock.sendMessage(jid, { text: 'Hello there!' });
+        } catch (error) {
+            console.error('Error handling message:', error);
+        }
     });
 
     return sock; // Return the socket object
 }
 
-module.exports = connectToWhatsApp; // Export the function
+module.exports = connectToWhatsApp;
