@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
 
 // Path for storing session data on Fly.io
 const sessionFolderPath = path.join('/data', 'auth_info_baileys');
