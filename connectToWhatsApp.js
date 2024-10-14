@@ -55,17 +55,22 @@ async function connectToWhatsApp() {
     });
 
     setTimeout(async () => {
-        const jid = '96565022680@s.whatsapp.net'; // Update this with the correct JID
+        const jid = '96565022680@s.whatsapp.net'; // Replace with a valid recipient JID
 
-        await sock.presenceSubscribe(jid);
-        await delay(500);
+        try {
+            await sock.presenceSubscribe(jid);
+            await delay(500);
 
-        await sock.sendPresenceUpdate('composing', jid);
-        await delay(2000);
+            await sock.sendPresenceUpdate('composing', jid);
+            await delay(2000);
 
-        await sock.sendPresenceUpdate('paused', jid);
-        await sock.sendMessage(jid, { text: 'Hello from WhatsApp' });
-    }, 30000);
+            await sock.sendPresenceUpdate('paused', jid);
+            await sock.sendMessage(jid, { text: 'Hello from WhatsApp' });
+            console.log('First message sent successfully after delay');
+        } catch (error) {
+            console.error('Failed to send the first message:', error);
+        }
+    }, 30000); // 30-second delay
 
     return sock; // Return the socket object
 }
