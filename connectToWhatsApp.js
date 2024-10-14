@@ -17,7 +17,7 @@ async function connectToWhatsApp() {
     // Check if the session file exists and load it if it does
     if (fs.existsSync(sessionFilePath)) {
         state = JSON.parse(fs.readFileSync(sessionFilePath, 'utf8'));
-        console.log('Loaded existing session from local storage.');
+        console.log(`Loaded existing session from local storage found at ${sessionFilePath}.`);
     } else {
         console.log('No existing session found. Please scan the QR code to authenticate.');
     }
