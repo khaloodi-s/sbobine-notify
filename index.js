@@ -1,6 +1,6 @@
 const express = require('express');
-const connectToWhatsApp = require('../connectToWhatsApp');  // Import your connectToWhatsApp function
-const sendMessageRouter = require('../sendMessage');  // Import the sendMessage router
+const connectToWhatsApp = require('./connectToWhatsApp');  // Import your connectToWhatsApp function
+const sendMessageRouter = require('./sendMessage');  // Import the sendMessage router
 
 const app = express();
 const port = process.env.PORT || 3000;
