@@ -1,6 +1,7 @@
 {
   "name": "sbobine-notify",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "start": "ts-node index.ts",
     "build": "tsc",
