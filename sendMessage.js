@@ -1,5 +1,5 @@
 const express = require('express');
-const connectToWhatsApp = require('./connectToWhatsApp'); // Import the connectToWhatsApp function
+const connectToWhatsApp = require('./connectToWhatsApp'); // Import that function
 const { MessageType, MessageOptions, MimeType } = require('baileys')
 
 let sock; // Declare a variable to hold the WhatsApp socket
