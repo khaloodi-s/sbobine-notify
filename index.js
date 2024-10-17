@@ -1,5 +1,5 @@
 const express = require('express');
-const connectToWhatsApp = require('./connectToWhatsApp');  // Import your connectToWhatsApp function
+const connectToWA = require('./connectToWA');  // Import your connectToWhatsApp function
 const sendMessageRouter = require('./sendMessage');  // Import the sendMessage router
 
 const app = express();
@@ -14,7 +14,7 @@ app.use('/', sendMessageRouter);
 // Initialize WhatsApp connection when the server starts
 async function startWhatsAppConnection() {
     try {
-        await connectToWhatsApp(); // Ensure connection is established
+        await connectToWA(); // Ensure connection is established
         console.log("WhatsApp connection successfully initialized.");
     } catch (error) {
         console.error("Failed to initialize WhatsApp connection:", error);
