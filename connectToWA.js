@@ -2,7 +2,7 @@
 const Boom = require('@hapi/boom');
 const NodeCache = require('node-cache');
 const readline = require('readline');
-const p = require('pino');
+const P = require('pino');
 const fs = require('fs');
 const path = require('path');
 const { default: AnyMessageContent, BinaryInfo, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, encodeWAM, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, isJidNewsletter, makeCacheableSignalKeyStore, makeInMemoryStore, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } = require('baileys');
