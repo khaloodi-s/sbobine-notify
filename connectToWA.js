@@ -20,14 +20,9 @@ const msgRetryCounterCache = new NodeCache()
 
 const onDemandMap = new Map()
 
-const rl = readline.createInterface({input: process.stdin, output: process.stdout})
-const question = (text) => {
-    return new Promise((resolve) => {
-        rl.question(text, (answer) => {
-            resolve(answer);
-        });
-    });
-};
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
+const question = (text) => new Promise((resolve) => rl.question(text, resolve))
+
 
 const store = useStore ? makeInMemoryStore({logger}) : undefined
 store?.readFromFile('/data/baileys_store_multi.json')
