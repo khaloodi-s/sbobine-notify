@@ -12,7 +12,7 @@ const { default: makeWASocket, AnyMessageContent, BinaryInfo, delay, DisconnectR
 const logger = P({ timestamp: () => `,"time":"${new Date().toJSON()}"` }, P.destination('./wa-logs.txt'))
 logger.level = 'trace'
 
-const usePairingCode = process.argv.includes('--use-pairing-code')
+const usePairingCode = true // process.argv.includes('--use-pairing-code')
 const useStore = !process.argv.includes('--no-store')
 const doReplies = process.argv.includes('--do-reply')
 
@@ -61,8 +61,9 @@ async function connectToWA() {
         const phoneNumber = await question('Please enter your phone number: \n')
         const code = await sock.requestPairingCode(phoneNumber)
         console.log(`Pairing code: ${code}`)
-        rl.close()
     }
+
+    rl.close()
 
     async function sendMessageWTyping(msg, jid){
         await sock.presenceSubscribe(jid)
@@ -161,7 +162,6 @@ async function connectToWA() {
         }
         return proto.Message.fromObject({})
     }
-
 }
 
 connectToWA()
