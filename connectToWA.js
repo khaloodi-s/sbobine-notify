@@ -2,7 +2,6 @@
 const Boom = require('@hapi/boom');
 const NodeCache = require('node-cache');
 const readline = require('readline');
-const openUrl = await import('open');
 const p = require('pino');
 const fs = require('fs');
 const path = require('path');
