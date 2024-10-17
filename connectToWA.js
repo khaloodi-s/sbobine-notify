@@ -21,7 +21,14 @@ const msgRetryCounterCache = new NodeCache()
 const onDemandMap = new Map()
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
-const question = (text) => new Promise((resolve) => rl.question(text, resolve))
+const question = (text) => {
+    return new Promise((resolve) => {
+        rl.question(text, (answer) => {
+            resolve(answer);
+            rl.close();  // Ensure close happens after resolving the question
+        });
+    });
+};
 
 
 const store = useStore ? makeInMemoryStore({logger}) : undefined
@@ -57,8 +64,6 @@ async function connectToWA() {
         const code = await sock.requestPairingCode(phoneNumber)
         console.log(`Pairing code: ${code}`)
     }
-
-    rl.close()
 
     async function sendMessageWTyping(msg, jid){
         await sock.presenceSubscribe(jid)
