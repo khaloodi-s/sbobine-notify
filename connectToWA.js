@@ -12,7 +12,7 @@ const { default: makeWASocket, AnyMessageContent, BinaryInfo, delay, DisconnectR
 const logger = P({ timestamp: () => `,"time":"${new Date().toJSON()}"` }, P.destination('./wa-logs.txt'))
 logger.level = 'trace'
 
-const usePairingCode = true // process.argv.includes('--use-pairing-code')
+const usePairingCode = process.argv.includes('--use-pairing-code')
 const useStore = !process.argv.includes('--no-store')
 const doReplies = process.argv.includes('--do-reply')
 
