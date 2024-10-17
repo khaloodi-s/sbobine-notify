@@ -9,8 +9,7 @@ const { default: AnyMessageContent, BinaryInfo, delay, DisconnectReason, downloa
 
 //----------------
 
-const usePairingCode = process.argv.includes('--use-pairing-code')
-usePairingCode = true // COMMENT OUT WHEN OPERATING WITH QR CODE
+const usePairingCode = true // process.argv.includes('--use-pairing-code')
 const useStore = !process.argv.includes('--no-store')
 const doReplies = process.argv.includes('--do-reply')
 
