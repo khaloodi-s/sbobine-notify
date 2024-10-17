@@ -60,7 +60,8 @@ async function connectToWA() {
     if (usePairingCode && !sock.authState.creds.registered) {
         const phoneNumber = await question('Please enter your phone number: \n')
         const code = await sock.requestPairingCode(phoneNumber)
-        console.log(`Pairing code: ${code}`) 
+        console.log(`Pairing code: ${code}`)
+        rl.close()
     }
 
     async function sendMessageWTyping(msg, jid){
