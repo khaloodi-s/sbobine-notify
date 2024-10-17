@@ -25,7 +25,7 @@ const question = (text) => {
     return new Promise((resolve) => {
         rl.question(text, (answer) => {
             resolve(answer);
-            rl.close();  // Ensure close happens after resolving the question
+            rl.pause();  // Ensure close happens after resolving the question
         });
     });
 };
