@@ -12,7 +12,7 @@ const { default: makeWASocket, AnyMessageContent, BinaryInfo, delay, DisconnectR
 const logger = P({ timestamp: () => `,"time":"${new Date().toJSON()}"` }, P.destination('./wa-logs.txt'))
 logger.level = 'trace'
 
-const usePairingCode = true // process.argv.includes('--use-pairing-code')
+const usePairingCode = process.argv.includes('--use-pairing-code')
 const useStore = !process.argv.includes('--no-store')
 const doReplies = process.argv.includes('--do-reply')
 
@@ -20,15 +20,15 @@ const msgRetryCounterCache = new NodeCache()
 
 const onDemandMap = new Map()
 
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
-const question = (text) => {
-    return new Promise((resolve) => {
-        rl.question(text, (answer) => {
-            resolve(answer);
-            rl.pause();  // Ensure close happens after resolving the question
-        });
-    });
-};
+// const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
+// const question = (text) => {
+    // return new Promise((resolve) => {
+        // rl.question(text, (answer) => {
+            // resolve(answer);
+            // rl.pause();  // Ensure close happens after resolving the question
+        // });
+    // });
+// };
 
 
 const store = useStore ? makeInMemoryStore({logger}) : undefined
@@ -47,7 +47,7 @@ async function connectToWA() {
     const sock = makeWASocket({
         version,
         logger,
-        printQRInTerminal: usePairingCode,
+        printQRInTerminal: true,
         auth:{
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, logger)
@@ -60,7 +60,7 @@ async function connectToWA() {
     store?.bind(sock.ev)
     
     if (usePairingCode && !sock.authState.creds.registered) {
-        const phoneNumber = await question('Please enter your phone number: \n')
+        const phoneNumber = process.env.PHONE_NUMBER
         const code = await sock.requestPairingCode(phoneNumber)
         console.log(`Pairing code: ${code}`)
     }

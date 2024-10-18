@@ -5,3 +5,5 @@ tempScript.js
 token.json
 script.js
 localTest.js
+testConnection.js
+connectToWA_legacy.js
