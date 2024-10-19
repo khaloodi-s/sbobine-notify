@@ -1,5 +1,5 @@
 const express = require('express');
-const connectToWA = require('./connectToWA'); // Import that function
+const connectToWhatsApp = require('./connectToWhatsApp'); // Import that function
 const { MessageType, MessageOptions, MimeType } = require('baileys')
 
 let sock; // Declare a variable to hold the WhatsApp socket
@@ -7,7 +7,7 @@ let sock; // Declare a variable to hold the WhatsApp socket
 // Function to ensure we have a connected socket
 const ensureConnection = async () => {
     if (!sock) {
-        sock = await connectToWA(); // Establish connection if not already done
+        sock = await connectToWhatsApp(); // Establish connection if not already done
     }
 };
 
