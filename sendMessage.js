@@ -15,12 +15,12 @@ const router = express.Router();
 
 // Endpoint to send a message
 router.post('/send-message', async (req, res) => {
-    const { groupId, message } = req.body;
+    const { groupChatId, message } = req.body;
 
     await ensureConnection(); // Ensure socket is connected
 
     try {
-        await sock.sendMessage(groupId, { text: message });
+        await sock.sendMessage(groupChatId, { text: message });
         return res.status(200).json({ success: true, message: 'Message sent successfully' });
     } catch (error) {
         console.error('Failed to send message:', error);
