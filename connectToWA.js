@@ -32,13 +32,13 @@ const onDemandMap = new Map()
 
 
 const store = useStore ? makeInMemoryStore({logger}) : undefined
-store?.readFromFile(path.join('/data','baileys_store_multi.json'))
-setInterval(() => {store?.writeToFile(path.join('/data','baileys_store_multi.json'))}, 10_000)
+store?.readFromFile('/data/baileys_store_multi.json')
+setInterval(() => {store?.writeToFile('/data/baileys_store_multi.json')}, 10_000)
 
 //----------------
 
 async function connectToWA() {
-    const { state, saveCreds } = await useMultiFileAuthState(path.join('/data','baileys_auth_info')) // Might have to switch state and saveCreds order around
+    const { state, saveCreds } = await useMultiFileAuthState('/data/baileys_auth_info') // Might have to switch state and saveCreds order around
 
     // Check for later WA web versions
     const { version, isLatest } = await fetchLatestBaileysVersion()
