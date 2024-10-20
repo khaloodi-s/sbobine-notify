@@ -9,3 +9,5 @@ testConnection.js
 connectToWA_legacy.js
 data/
 connectToWA.js
+session/
+connectToWhatsApp_new.js

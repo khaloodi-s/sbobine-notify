@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('fs/promises');
 const path = require('path');
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
 
@@ -19,18 +19,32 @@ async function connectToWhatsApp() {
         syncFullHistory: false,
     });
 
-    sock.ev.on('connection.update', (update) => {
+    sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update;
 
         if (connection === 'close') {
             const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
             console.log('Connection closed due to:', lastDisconnect?.error, ', reconnecting:', shouldReconnect);
 
-            if (shouldReconnect) {
-                sock = null; // Reset sock to allow reconnection
-                setTimeout(connectToWhatsApp, 5000); // Attempt to reconnect after 5 seconds
+            if (!shouldReconnect) {
+                try {
+                    await fs.rm(sessionPath, { recursive: true, force: true });
+                    console.log("Old session files wiped successfully.");
+                } catch (err) {
+                    console.error("Error wiping old files:", err);
+                }
+                
+                try {
+                    await fs.mkdir(sessionPath, { recursive: true });
+                    console.log("New auth file directory created successfully.");
+                } catch (err) {
+                    console.error("Error creating new auth file directory:", err);
+                }
             }
-        } else if (connection === 'open') {
+            sock = null; // Reset sock to allow reconnection
+            setTimeout(connectToWhatsApp, 5000);
+            }
+            else if (connection === 'open') {
             console.log('Successfully opened connection');
         }
     });
@@ -49,12 +63,25 @@ async function connectToWhatsApp() {
             await delay(2000);
 
             await sock.sendPresenceUpdate('paused', jid);
-            await sock.sendMessage(jid, { text: 'Hello from WhatsApp' });
+            await sock.sendMessage(jid, { text: 'Booted Successfully' });
             console.log('First message sent successfully after delay');
         } catch (error) {
             console.error('Failed to send the first message:', error);
         }
     }, 30000); // 30-second delay
+
+    sock.ev.on('messages.upsert', async (chatUpdate) => {
+        const message = chatUpdate.messages[0];
+        if (!message.key.fromMe && message.message && message.message.conversation) {
+            const text = message.message.conversation;
+
+            if (text === '!ping') {
+                const replyMessage = { text: 'pong' };
+                await sock.sendMessage(message.key.remoteJid, replyMessage);
+                console.log(`Sent reply: pong to ${message.key.remoteJid}`);
+            }
+        }
+    });
 
     return sock; // Return the socket object
 }
