@@ -1,24 +1,10 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
-const { SocksProxyAgent } = require('socks-proxy-agent');
+const axios = require('axios');
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const proxyUrl = process.env.FIXIE_PROXY.replace(/^fixie:\/\//, "socks5://"); // Convert to socks5
-const proxyAgent = new SocksProxyAgent(proxyUrl);
-
-async function checkProxy() {
-    try {
-        const response = await fetch('https://api64.ipify.org?format=json', {
-            agent: proxyAgent,  // Use the SOCKS proxy here
-        });
-        const data = await response.json();
-        console.log('External IP via Proxy:', data.ip);
-    } catch (error) {
-        console.error('Proxy check failed:', error.message);
-        process.exit(1);
-    }
-}
+const fixieUrl = new URL(process.env.FIXIE_PROXY);
 
 // Path for local storage on Fly.io
 const sessionPath = path.join(__dirname, '/data', 'auth_info_baileys'); 
@@ -33,9 +19,20 @@ async function connectToWhatsApp() {
 
     sock = makeWASocket({
         auth: authState,
-        fetchAgent: proxyAgent,
+        browser: ["Firefox", "Ubuntu", "20.0"],
         printQRInTerminal: true, // Print QR code in terminal for authentication
         syncFullHistory: false,
+        options: {
+            proxy: {
+                protocol: "http",
+                host: fixieUrl.hostname,
+                port: fixieUrl.port,
+                auth: {
+                    username: fixieUrl.username,
+                    password: fixieUrl.password
+                }
+            }
+        }
     });
 
     sock.ev.on('connection.update', async (update) => {
