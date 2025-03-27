@@ -1,6 +1,11 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
+const { ProxyAgent } = require('proxy-agent');
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const proxyUrl = process.env.FIXIE_PROXY;
+const proxyAgent = new ProxyAgent(proxyUrl);
 
 // Path for local storage on Fly.io
 const sessionPath = path.join(__dirname, '/data', 'auth_info_baileys'); 
@@ -15,6 +20,7 @@ async function connectToWhatsApp() {
 
     sock = makeWASocket({
         auth: authState,
+        fetchAgent: proxyAgent,
         printQRInTerminal: true, // Print QR code in terminal for authentication
         syncFullHistory: false,
     });
@@ -56,8 +62,9 @@ async function connectToWhatsApp() {
         const jid = '96565022680@s.whatsapp.net'; // Replace with a valid recipient JID
 
         try {
+            await delay(5000);
             await sock.presenceSubscribe(jid);
-            await delay(500);
+            await delay(1000);
 
             await sock.sendPresenceUpdate('composing', jid);
             await delay(2000);
@@ -85,7 +92,5 @@ async function connectToWhatsApp() {
 
     return sock; // Return the socket object
 }
-
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 module.exports = connectToWhatsApp; // Export the function
