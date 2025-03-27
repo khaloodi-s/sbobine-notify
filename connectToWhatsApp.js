@@ -7,6 +7,19 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const proxyUrl = process.env.FIXIE_PROXY;
 const proxyAgent = new SocksProxyAgent(proxyUrl);
 
+async function checkProxy() {
+    try {
+        const response = await fetch('https://api64.ipify.org?format=json', {
+            agent: proxyAgent,  // Use the SOCKS proxy here
+        });
+        const data = await response.json();
+        console.log('External IP via Proxy:', data.ip);
+    } catch (error) {
+        console.error('Proxy check failed:', error.message);
+        process.exit(1);
+    }
+}
+
 // Path for local storage on Fly.io
 const sessionPath = path.join(__dirname, '/data', 'auth_info_baileys'); 
 let sock; // Declare sock at a higher scope to manage the connection
