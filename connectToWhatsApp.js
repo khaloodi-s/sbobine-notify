@@ -4,7 +4,7 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = requi
 const { SocksProxyAgent } = require('socks-proxy-agent');
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const proxyUrl = process.env.FIXIE_PROXY;
+const proxyUrl = process.env.FIXIE_PROXY.replace(/^fixie:\/\//, "socks5://"); // Convert to socks5
 const proxyAgent = new SocksProxyAgent(proxyUrl);
 
 async function checkProxy() {
