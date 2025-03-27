@@ -1,11 +1,11 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
-const { ProxyAgent } = require('proxy-agent');
+const { SocksProxyAgent } = require('socks-proxy-agent');
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const proxyUrl = process.env.FIXIE_PROXY;
-const proxyAgent = new ProxyAgent(proxyUrl);
+const proxyAgent = new SocksProxyAgent(proxyUrl);
 
 // Path for local storage on Fly.io
 const sessionPath = path.join(__dirname, '/data', 'auth_info_baileys'); 
