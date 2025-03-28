@@ -39,9 +39,10 @@ async function connectToWhatsApp() {
         if (connection === "connecting" || !!qr) {console.log("Connecting to WhatsApp...")
             console.log("Requesting pairing code...");
             try {
+                await delay(5000);
                 const pairingCode = await sock.requestPairingCode(201025965327);
                 console.log("Pairing code: ", pairingCode);
-                await delay(10000); // Wait for 5 seconds (adjust as needed)
+                await delay(10000); // Wait for 10 seconds (adjust as needed)
                 console.log("Waiting for pairing to complete...");
             } catch (error) {
                 console.error("Error generating pairing code", error);
