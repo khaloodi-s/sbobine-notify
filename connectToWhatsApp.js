@@ -35,9 +35,10 @@ async function connectToWhatsApp() {
     });
 
     sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, isNewLogin } = update;
+        const { connection, lastDisconnect, qr } = update;
 
-        if (isNewLogin) {
+        if (connection === "connecting") {console.log("Connecting to WhatsApp...")}
+        if (qr) {
             console.log("Requesting pairing code...");
             try {
                 const pairingCode = await sock.requestPairingCode(201025965327);
