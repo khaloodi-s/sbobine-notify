@@ -1,10 +1,10 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
-const axios = require('axios');
+//--const axios = require('axios');
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const fixieUrl = new URL(process.env.FIXIE_PROXY);
+//--const fixieUrl = new URL(process.env.FIXIE_PROXY);
 
 // Path for local storage on Fly.io
 const sessionPath = path.join(__dirname, '/data', 'auth_info_baileys'); 
@@ -21,7 +21,7 @@ async function connectToWhatsApp() {
         auth: authState,
         browser: ["Firefox", "Ubuntu", "20.0"],
         syncFullHistory: false,
-        options: {
+        /*options: {
             proxy: {
                 protocol: "http",
                 host: fixieUrl.hostname,
@@ -31,7 +31,7 @@ async function connectToWhatsApp() {
                     password: fixieUrl.password
                 }
             }
-        }
+        }*/
     });
 
     sock.ev.on('connection.update', async (update) => {
