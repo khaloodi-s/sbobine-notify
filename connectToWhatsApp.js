@@ -20,7 +20,6 @@ async function connectToWhatsApp() {
     sock = makeWASocket({
         auth: authState,
         browser: ["Firefox", "Ubuntu", "20.0"],
-        printQRInTerminal: true, // Print QR code in terminal for authentication
         syncFullHistory: false,
         options: {
             proxy: {
@@ -36,7 +35,17 @@ async function connectToWhatsApp() {
     });
 
     sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect } = update;
+        const { connection, lastDisconnect, isNewLogin } = update;
+
+        if (isNewLogin) {
+            console.log("Requesting pairing code...");
+            try {
+                const pairingCode = await sock.requestPairingCode(201025965327);
+                console.log("Pairing code: ", pairingCode);
+            } catch (error) {
+                console.error("Error generating pairing code", error);
+            }
+        }
 
         if (connection === 'close') {
             const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
