@@ -19,7 +19,7 @@ async function connectToWhatsApp() {
 
     sock = makeWASocket({
         auth: authState,
-        browser: ["Firefox", "Ubuntu", "20.0"],
+        browser: ["Chrome", "Ubuntu", "20.0"],
         syncFullHistory: false,
         /*options: {
             proxy: {
@@ -69,7 +69,7 @@ async function connectToWhatsApp() {
                 }
             }
             sock = null; // Reset sock to allow reconnection
-            setTimeout(connectToWhatsApp, 5000);
+            setTimeout(connectToWhatsApp, 15000);
             }
             else if (connection === 'open') {
             console.log('Successfully opened connection');
