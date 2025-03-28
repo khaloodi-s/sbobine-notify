@@ -19,7 +19,6 @@ async function connectToWhatsApp() {
 
     sock = makeWASocket({
         auth: authState,
-        browser: ["Chrome", "Ubuntu", "20.0"],
         syncFullHistory: false,
         /*options: {
             proxy: {
